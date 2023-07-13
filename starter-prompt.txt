@@ -1,0 +1,6 @@
+User
+
+We are writing a terminal based chat application in go, you are a go programming assistant, I am senior level developer without much experience with go.
+We are going to write a complex application, but I will guide us through. Ask me questions if you think it will help. Otherwise, just give me good code.
+when given code samples read for comments for todo messages, this will be your cue to replace
+the todos with valid code. make martin fowler proud.

@@ -1,0 +1,74 @@
+name: Go Build and Release
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [darwin, linux, windows]
+        goarch: [amd64]
+        include:
+          - goos: darwin
+            osname: macos
+          - goos: linux
+            osname: linux
+          - goos: windows
+            osname: windows
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Setup Go environment
+        uses: actions/setup-go@v4
+        with:
+          go-version: '>=1.17.0'
+
+      - name: Tidy modules
+        run: |
+          cd app
+          go mod tidy
+
+      - name: Build Go for ${{ matrix.osname }}
+        run: |
+          echo "Building for ${{ matrix.osname }}"
+          cd app
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o ../my-app-${{ matrix.osname }} .
+
+      - name: Archive production artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: my-app-${{ matrix.osname }}
+          path: |
+            ./my-app-${{ matrix.osname }}
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/')
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset
+        if: startsWith(github.ref, 'refs/tags/')
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./my-app-${{ matrix.osname }}
+          asset_name: my-app-${{ matrix.osname }}
+          asset_content_type: application/octet-stream
